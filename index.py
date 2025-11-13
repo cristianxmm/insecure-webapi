@@ -73,7 +73,10 @@ def Registro():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'insert into Usuario values(null,"{request.json["uname"]}","{request.json["email"]}",md5("{request.json["password"]}"))');
+			# consulta parametrizada para parchar el SQL inyection
+			sql = "INSERT INTO Usuario VALUES (null, %s, %s, md5(%s))"
+			data = (request.json["uname"], request.json["email"], request.json["password"])
+			cursor.execute(sql, data)
 			R = cursor.lastrowid
 			db.commit()
 		db.close()
@@ -121,8 +124,11 @@ def Login():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			print(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")')
-			cursor.execute(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")');
+			# consulta parametrizada para parchar el SQL inyection
+			print(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")') # El print se queda
+			sql = "SELECT id FROM Usuario WHERE uname = %s AND password = md5(%s)"
+			data = (request.json["uname"], request.json["password"])
+			cursor.execute(sql, data)
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
@@ -143,16 +149,18 @@ def Login():
 	
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'Delete from AccesoToken where id_Usuario = "{R[0][0]}"');
-			cursor.execute(f'insert into AccesoToken values({R[0][0]},"{T}",now())');
+			#Parcheo parametrizado SQL
+			sql_del = "DELETE FROM AccesoToken WHERE id_Usuario = %s"
+			cursor.execute(sql_del, (R[0][0],))
+			sql_ins = "INSERT INTO AccesoToken VALUES (%s, %s, now())"
+			cursor.execute(sql_ins, (R[0][0], T))
 			db.commit()
-			db.close()
-			return {"R":0,"D":T}
+		db.close()
+		return {"R":0,"D":T}
 	except Exception as e:
 		print(e)
 		db.close()
 		return {"R":-4}
-
 """
 /*
  * Este subir imagen recibe un JSON con el siguiente formato
@@ -200,7 +208,9 @@ def Imagen():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'select id_Usuario from AccesoToken where token = "{TKN}"');
+		#Parcheo SQL inyection con consulta parametrizada.
+			sql = "SELECT id_Usuario FROM AccesoToken WHERE token = %s"
+			cursor.execute(sql, (TKN,))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
@@ -217,11 +227,20 @@ def Imagen():
 	# Guardar info del archivo en la base de datos
 	try:
 		with db.cursor() as cursor:
-			cursor.execute(f'insert into Imagen values(null,"{request.json["name"]}","img/",{id_Usuario})');
-			cursor.execute('select max(id) as idImagen from Imagen where id_Usuario = '+str(id_Usuario));
+       			#Parcheo con consulta parametrizada
+			sql_ins = "INSERT INTO Imagen VALUES (null, %s, 'img/', %s)"
+			data_ins = (request.json["name"], id_Usuario)	
+			cursor.execute(sql_ins, data_ins)
+       			#Parcheo con consulta parametrizada
+			sql_max = "SELECT max(id) as idImagen FROM Imagen WHERE id_Usuario = %s"
+			cursor.execute(sql_max, (id_Usuario,))
 			R = cursor.fetchall()
 			idImagen = R[0][0];
-			cursor.execute('update Imagen set ruta = "img/'+str(idImagen)+'.'+str(request.json['ext'])+'" where id = '+str(idImagen));
+       			#Parcheo con consulta parametrizada
+			nueva_ruta = f"img/{idImagen}.{request.json['ext']}"	
+			sql_upd = "UPDATE Imagen SET ruta = %s WHERE id = %s"
+			data_upd = (nueva_ruta, idImagen)
+			cursor.execute(sql_upd, data_upd)
 			db.commit()
 			# Mover archivo a su nueva locacion
 			shutil.move('tmp/'+str(id_Usuario),'img/'+str(idImagen)+'.'+str(request.json['ext']))
@@ -272,20 +291,21 @@ def Descargar():
 	R = False
 	try:
 		with db.cursor() as cursor:
-			cursor.execute('select id_Usuario from AccesoToken where token = "'+TKN+'"');
+       		#Parcheo con consulta parametrizada
+			sql = "SELECT id_Usuario FROM AccesoToken WHERE token = %s"
+			cursor.execute(sql, (TKN,))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)
 		db.close()
 		return {"R":-2}
-		
-	
-	
 	# Buscar imagen y enviarla
 	
 	try:
 		with db.cursor() as cursor:
-			cursor.execute('Select name,ruta from  Imagen where id = '+str(idImagen));
+			#Parcheo con consulta parametrizada
+			sql = "SELECT name, ruta FROM Imagen WHERE id = %s"
+			cursor.execute(sql, (idImagen,))
 			R = cursor.fetchall()
 	except Exception as e: 
 		print(e)

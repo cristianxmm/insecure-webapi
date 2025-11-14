@@ -289,12 +289,17 @@ def Descargar():
 	idImagen = request.json['id'];
 	
 	R = False
+	id_usuario_del_token = None
 	try:
 		with db.cursor() as cursor:
        		#Parcheo con consulta parametrizada
 			sql = "SELECT id_Usuario FROM AccesoToken WHERE token = %s"
 			cursor.execute(sql, (TKN,))
 			R = cursor.fetchall()
+			if not R:
+				db.close()
+				return{"R":-2}
+			id_usuario_del_token = R[0][0]
 	except Exception as e: 
 		print(e)
 		db.close()
@@ -304,9 +309,16 @@ def Descargar():
 	try:
 		with db.cursor() as cursor:
 			#Parcheo con consulta parametrizada
-			sql = "SELECT name, ruta FROM Imagen WHERE id = %s"
-			cursor.execute(sql, (idImagen,))
+			sql = "SELECT name, ruta FROM Imagen WHERE id = %s AND id_Usuario =%s"
+			data=(idImagen, id_usuario_del_token)
+			cursor.execute(sql, data)
 			R = cursor.fetchall()
+			
+			if not R:
+				db.close()
+				return{"R":-3}
+
+
 	except Exception as e: 
 		print(e)
 		db.close()

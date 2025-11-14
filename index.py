@@ -7,8 +7,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from bottle import route, run, template, post, request, static_file
+from argon2 import PasswordHasher
 
-
+ph = PasswordHasher()
 
 def loadDatabaseSettings(pathjs):
 	pathjs = Path(pathjs)
@@ -74,8 +75,9 @@ def Registro():
 	try:
 		with db.cursor() as cursor:
 			# consulta parametrizada para parchar el SQL inyection
-			sql = "INSERT INTO Usuario VALUES (null, %s, %s, md5(%s))"
-			data = (request.json["uname"], request.json["email"], request.json["password"])
+			hash_pwd = ph.hash(request.json["password"])
+			sql = "INSERT INTO Usuario VALUES (null, %s, %s, %s)"
+			data = (request.json["uname"], request.json["email"], hash_pwd)
 			cursor.execute(sql, data)
 			R = cursor.lastrowid
 			db.commit()
@@ -126,10 +128,21 @@ def Login():
 		with db.cursor() as cursor:
 			# consulta parametrizada para parchar el SQL inyection
 			print(f'Select id from  Usuario where uname ="{request.json["uname"]}" and password = md5("{request.json["password"]}")') # El print se queda
-			sql = "SELECT id FROM Usuario WHERE uname = %s AND password = md5(%s)"
-			data = (request.json["uname"], request.json["password"])
-			cursor.execute(sql, data)
-			R = cursor.fetchall()
+			sql = "SELECT id, password FROM Usuario WHERE uname = %s"
+			cursor.execute(sql, (request.json["uname"],))
+			user_row = cursor.fetchone()
+			
+			if not user_row:
+				db.close()
+				return {"R": -3}
+			id_usuario = user_row[0]
+			hash_almacenado = user_row[1]
+			try:
+				ph.verify(hash_almacenado, request.json["password"])
+				R=[[id_usuario]]
+			except Exception:
+				R=False
+
 	except Exception as e: 
 		print(e)
 		db.close()

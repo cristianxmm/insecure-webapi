@@ -83,7 +83,7 @@ def Registro():
 			db.commit()
 		db.close()
 	except Exception as e:
-		print(e) 
+		print("Error interno en /Registro. Sin detalles.") 
 		return {"R":-2}
 	return {"R":0,"D":R}
 
@@ -144,7 +144,7 @@ def Login():
 				R=False
 
 	except Exception as e: 
-		print(e)
+		print("Error interno en /Login (Paso 1). Sin detalles.")
 		db.close()
 		return {"R":-2}
 	
@@ -171,7 +171,7 @@ def Login():
 		db.close()
 		return {"R":0,"D":T}
 	except Exception as e:
-		print(e)
+		print("Error interno en /Login (Paso 2). Sin detalles.")
 		db.close()
 		return {"R":-4}
 """
@@ -226,7 +226,7 @@ def Imagen():
 			cursor.execute(sql, (TKN,))
 			R = cursor.fetchall()
 	except Exception as e: 
-		print(e)
+		print("Error interno en /Imagen (Paso 1). Sin detalles.")
 		db.close()
 		return {"R":-2}
 	
@@ -259,7 +259,7 @@ def Imagen():
 			shutil.move('tmp/'+str(id_Usuario),'img/'+str(idImagen)+'.'+str(request.json['ext']))
 			return {"R":0,"D":idImagen}
 	except Exception as e: 
-		print(e)
+		print("Error interno en /Imagen (Paso 2). Sin detalles.")
 		db.close()
 		return {"R":-3}
 	
@@ -314,7 +314,7 @@ def Descargar():
 				return{"R":-2}
 			id_usuario_del_token = R[0][0]
 	except Exception as e: 
-		print(e)
+		print("Error interno en /Descargar (Paso 1). Sin detalles.")
 		db.close()
 		return {"R":-2}
 	# Buscar imagen y enviarla
@@ -333,7 +333,7 @@ def Descargar():
 
 
 	except Exception as e: 
-		print(e)
+		print("Error interno en /Descargar (Paso 2).Sin detalles")
 		db.close()
 		return {"R":-3}
 	print(Path("img").resolve(),R[0][1])

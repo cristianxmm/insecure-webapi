@@ -225,6 +225,9 @@ def Imagen():
 			sql = "SELECT id_Usuario FROM AccesoToken WHERE token = %s"
 			cursor.execute(sql, (TKN,))
 			R = cursor.fetchall()
+			if not R:
+				db.close()
+				return {"R"-2}
 	except Exception as e: 
 		print("Error interno en /Imagen (Paso 1). Sin detalles.")
 		db.close()
